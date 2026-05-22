@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Social Internship Logbook & Report Generator</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --ink:#0d1117;--ink2:#1e2533;--slate:#374151;--muted:#6b7280;
+  --border:#e2e6ea;--surface:#f8f9fc;--white:#ffffff;
+  --accent:#1d4e89;--accent2:#2563a8;--gold:#b5892a;--gold2:#d4a843;
+  --green:#15803d;--red:#b91c1c;--radius:12px;
+  --shadow:0 2px 12px rgba(13,17,23,0.08);--shadow-lg:0 8px 40px rgba(13,17,23,0.14);
+}
+body{font-family:'Outfit',sans-serif;background:var(--surface);color:var(--ink);min-height:100vh;line-height:1.6}
+.header{background:var(--ink);color:#fff}
+.header-inner{max-width:1080px;margin:0 auto;padding:18px 32px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-icon{width:46px;height:46px;background:var(--gold);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.brand h1{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:700;letter-spacing:.3px;line-height:1}
+.brand p{font-size:11px;color:rgba(255,255,255,.45);letter-spacing:1.8px;text-transform:uppercase;margin-top:3px}
+.ai-chip{background:rgba(213,168,67,.12);border:1px solid rgba(213,168,67,.3);color:var(--gold2);padding:6px 14px;border-radius:100px;font-size:11px;font-weight:500;letter-spacing:.6px;white-space:nowrap}
+.hero{background:linear-gradient(135deg,#0d1117 0%,#1a2744 100%);padding:40px 32px;border-bottom:3px solid var(--gold)}
+.hero-inner{max-width:1080px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:32px;align-items:center}
+.hero h2{font-family:'Cormorant Garamond',serif;font-size:34px;font-weight:600;color:#fff;line-height:1.2;margin-bottom:10px}
+.hero h2 span{color:var(--gold2)}
+.hero p{color:rgba(255,255,255,.55);font-size:15px;max-width:520px}
+.steps-pill{display:flex;gap:0;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:100px;padding:4px;flex-shrink:0}
+.sp{display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:100px;font-size:12px;font-weight:500;color:rgba(255,255,255,.4);cursor:pointer;transition:.2s;white-space:nowrap}
+.sp.active{background:var(--gold);color:var(--ink);font-weight:600}
+.sp.done{color:var(--gold2)}
+.sp-num{width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0}
+.sp.active .sp-num{background:var(--ink);color:var(--gold)}
+.sp.done .sp-num{background:var(--gold2);color:var(--ink)}
+.wrap{max-width:1080px;margin:0 auto;padding:36px 32px 80px}
+.panel{background:var(--white);border-radius:18px;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:24px;overflow:hidden;display:none}
+.panel.show{display:block}
+.panel-head{padding:22px 28px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px}
+.ph-icon{width:42px;height:42px;border-radius:11px;background:var(--ink);color:var(--gold2);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.ph-text h3{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink);line-height:1}
+.ph-text p{font-size:12px;color:var(--muted);margin-top:3px}
+.panel-body{padding:28px 28px}
+.fg{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+.fg label{font-size:11px;font-weight:600;color:var(--slate);letter-spacing:.8px;text-transform:uppercase}
+.fg input,.fg select,.fg textarea{padding:10px 14px;border-radius:9px;border:1.5px solid var(--border);font-family:'Outfit',sans-serif;font-size:14px;color:var(--ink);background:var(--surface);transition:.2s;outline:none;width:100%}
+.fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--accent2);background:#fff;box-shadow:0 0 0 3px rgba(37,99,168,.08)}
+.fg textarea{resize:vertical;min-height:76px;line-height:1.6}
+.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 24px}
+.fgrid .full{grid-column:1/-1}
+.entry-cards{display:flex;flex-direction:column;gap:16px}
+.entry-card{border:1.5px solid var(--border);border-radius:14px;overflow:hidden;transition:border-color .2s}
+.entry-card:hover{border-color:var(--accent2)}
+.entry-card-head{background:var(--ink);padding:12px 18px;display:flex;align-items:center;justify-content:space-between}
+.entry-badge{background:var(--gold);color:var(--ink);padding:3px 12px;border-radius:100px;font-size:11px;font-weight:700;letter-spacing:.6px}
+.rm-btn{background:transparent;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-family:'Outfit',sans-serif;transition:.15s}
+.rm-btn:hover{background:rgba(185,28,28,.2);border-color:rgba(185,28,28,.4);color:#fca5a5}
+.entry-card-body{padding:18px;display:grid;grid-template-columns:1fr 1fr;gap:0 20px;background:#fff}
+.entry-card-body .full{grid-column:1/-1}
+.btn{padding:11px 22px;border-radius:9px;border:none;font-family:'Outfit',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important}
+.btn-dark{background:var(--ink);color:#fff}
+.btn-dark:hover:not(:disabled){background:var(--ink2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(13,17,23,.2)}
+.btn-gold{background:var(--gold);color:#fff}
+.btn-gold:hover:not(:disabled){background:var(--gold2);transform:translateY(-1px);box-shadow:0 6px 20px rgba(181,137,42,.3);color:var(--ink)}
+.btn-outline{background:#fff;color:var(--ink);border:1.5px solid var(--border)}
+.btn-outline:hover:not(:disabled){border-color:var(--ink);background:var(--surface)}
+.btn-green{background:var(--green);color:#fff}
+.btn-green:hover:not(:disabled){background:#166534;transform:translateY(-1px)}
+.btn-sm{padding:7px 14px;font-size:12px;border-radius:7px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:10px}
+.doc-types{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:24px 0}
+.dt{border:2px solid var(--border);border-radius:14px;padding:22px 18px;cursor:pointer;transition:.2s;background:#fff;position:relative}
+.dt:hover{border-color:var(--accent2)}
+.dt.sel{border-color:var(--gold);background:#fffbf0}
+.dt-icon{font-size:30px;margin-bottom:10px}
+.dt h4{font-family:'Cormorant Garamond',serif;font-size:17px;font-weight:600;color:var(--ink);margin-bottom:4px}
+.dt p{font-size:12px;color:var(--muted);line-height:1.5}
+.dt-check{display:none;position:absolute;top:14px;right:14px;width:20px;height:20px;background:var(--gold);border-radius:50%;align-items:center;justify-content:center;font-size:11px;color:#fff}
+.dt.sel .dt-check{display:flex}
+.loading{display:none;flex-direction:column;align-items:center;gap:18px;padding:60px 32px;text-align:center;background:#fff;border-radius:18px;border:1px solid var(--border);box-shadow:var(--shadow);margin-bottom:24px}
+.loading.show{display:flex}
+.spin{width:52px;height:52px;border:3px solid var(--border);border-top-color:var(--accent2);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading h3{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--ink)}
+.loading p{font-size:14px;color:var(--muted);max-width:360px}
+.progress-bar{width:280px;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent) 0%,var(--gold) 100%);border-radius:2px;animation:prog 2.5s ease-in-out infinite}
+@keyframes prog{0%{width:5%}50%{width:75%}100%{width:95%}}
+.preview-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:22px;padding:18px 24px;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+.preview-bar h3{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--ink)}
+.preview-bar p{font-size:12px;color:var(--muted);margin-top:2px}
+.doc-preview{background:#fff;border-radius:16px;border:1px solid var(--border);box-shadow:var(--shadow-lg);max-width:820px;margin:0 auto;overflow:hidden}
+.doc-cover{background:var(--ink);padding:50px 60px;text-align:center;position:relative}
+.doc-cover::after{content:'';position:absolute;bottom:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--gold) 0%,var(--gold2) 100%)}
+.cover-label{font-size:10px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(255,255,255,.4);font-weight:500;margin-bottom:12px}
+.cover-title{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;color:#fff;margin-bottom:6px;line-height:1.2}
+.cover-org{font-size:16px;color:var(--gold2);font-weight:500;margin-bottom:24px}
+.cover-meta{display:inline-grid;grid-template-columns:1fr 1fr;gap:8px 32px;text-align:left;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:16px 24px}
+.cm-item{display:flex;flex-direction:column;gap:2px}
+.cm-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:1px;text-transform:uppercase}
+.cm-val{font-size:13px;color:#fff;font-weight:500}
+.doc-body{padding:48px 60px;font-size:14px;line-height:1.85;color:#2c2c3e}
+.doc-sec-title{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:700;color:var(--ink);margin:32px 0 14px;padding-left:14px;border-left:4px solid var(--gold);line-height:1.2}
+.doc-entry{margin-bottom:28px;padding:20px 22px;background:var(--surface);border-radius:12px;border-left:3px solid var(--accent)}
+.doc-entry-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.entry-num{background:var(--ink);color:var(--gold2);padding:3px 10px;border-radius:5px;font-size:11px;font-weight:700;letter-spacing:.8px}
+.entry-date{font-size:12px;color:var(--muted)}
+.entry-type{background:rgba(37,99,168,.1);color:var(--accent2);padding:2px 10px;border-radius:100px;font-size:11px;font-weight:600}
+.doc-entry p{font-size:14px;line-height:1.85;color:#333;margin-bottom:8px}
+.doc-para{margin-bottom:12px;font-size:14px;line-height:1.9;color:#333}
+.signatures{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:48px;padding-top:32px;border-top:1px solid var(--border)}
+.sig-box p{font-size:11px;color:var(--muted);margin-bottom:32px}
+.sig-line{border-bottom:1.5px solid var(--ink);margin-bottom:8px}
+.sig-name{font-size:13px;font-weight:600;color:var(--ink)}
+.sig-role{font-size:11px;color:var(--muted)}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--ink);color:#fff;padding:12px 20px;border-radius:10px;font-size:13px;font-weight:500;box-shadow:var(--shadow-lg);z-index:9999;transform:translateY(16px);opacity:0;transition:.3s;pointer-events:none}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:var(--green)}
+.toast.error{background:var(--red)}
+.empty-note{text-align:center;padding:28px;color:var(--muted);font-size:14px;background:var(--surface);border-radius:10px;border:1.5px dashed var(--border)}
+@media(max-width:700px){
+  .wrap,.header-inner,.hero-inner,.hero{padding-left:16px;padding-right:16px}
+  .fgrid,.entry-card-body,.doc-types,.cover-meta,.signatures{grid-template-columns:1fr}
+  .fgrid .full,.entry-card-body .full{grid-column:1}
+  .doc-body,.doc-cover{padding:28px 20px}
+  .hero-inner{grid-template-columns:1fr}
+  .steps-pill{display:none}
+  .hero h2{font-size:24px}
+}
+</style>
+</head>
+<body>
+ 
+<header class="header">
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-icon">📋</div>
+      <div>
+        <h1>InternLog AI</h1>
+        <p>Social Internship Document Generator</p>
+      </div>
+    </div>
+    <div class="ai-chip">✦ Powered by Claude AI</div>
+  </div>
+</header>
+ 
+<div class="hero">
+  <div class="hero-inner">
+    <div>
+      <h2>Generate Your <span>Internship Logbook</span><br/>& Report in Seconds</h2>
+      <p>Fill in short prompts for each day — Claude AI expands them into detailed, professional social work documents. Download as formatted PDF instantly.</p>
+    </div>
+    <div class="steps-pill">
+      <div class="sp active" id="sp1" onclick="gotoStep(1)"><div class="sp-num">1</div>Details</div>
+      <div class="sp" id="sp2" onclick="gotoStep(2)"><div class="sp-num">2</div>Log Entries</div>
+      <div class="sp" id="sp3" onclick="gotoStep(3)"><div class="sp-num">3</div>Generate</div>
+      <div class="sp" id="sp4"><div class="sp-num">4</div>Download</div>
+    </div>
+  </div>
+</div>
+ 
+<div class="wrap">
+ 
+  <!-- STEP 1 -->
+  <div class="panel show" id="s1">
+    <div class="panel-head">
+      <div class="ph-icon">🎓</div>
+      <div class="ph-text">
+        <h3>Student & Internship Details</h3>
+        <p>Enter your personal and placement information below</p>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="fgrid">
+        <div class="fg"><label>Full Name *</label><input id="f-name" type="text" placeholder="e.g. Priya Sharma"/></div>
+        <div class="fg"><label>Roll No / Student ID</label><input id="f-id" type="text" placeholder="e.g. 22BSW041"/></div>
+        <div class="fg"><label>College / University *</label><input id="f-college" type="text" placeholder="e.g. Gujarat University, Ahmedabad"/></div>
+        <div class="fg"><label>Department / Programme</label><input id="f-dept" type="text" placeholder="e.g. B.S.W. — Social Work"/></div>
+        <div class="fg"><label>Organisation / NGO Name *</label><input id="f-org" type="text" placeholder="e.g. Disha Foundation"/></div>
+        <div class="fg"><label>Organisation Address</label><input id="f-addr" type="text" placeholder="e.g. Navrangpura, Ahmedabad, Gujarat"/></div>
+        <div class="fg"><label>Internship Start Date</label><input id="f-start" type="date"/></div>
+        <div class="fg"><label>Internship End Date</label><input id="f-end" type="date"/></div>
+        <div class="fg"><label>Field Supervisor / Guide</label><input id="f-sup" type="text" placeholder="e.g. Ms. Rekha Patel"/></div>
+        <div class="fg"><label>Faculty Mentor</label><input id="f-fac" type="text" placeholder="e.g. Dr. Anita Mehta"/></div>
+        <div class="fg full"><label>About the Organisation</label><textarea id="f-about" placeholder="Brief 2–3 lines: what the NGO does, its mission, area of work, who it serves…"></textarea></div>
+        <div class="fg full"><label>Your Role & Objectives</label><textarea id="f-role" placeholder="Briefly describe what you were expected to do during the internship…"></textarea></div>
+      </div>
+      <div class="row"><button class="btn btn-dark" onclick="gotoStep(2)">Next: Add Log Entries →</button></div>
+    </div>
+  </div>
+ 
+  <!-- STEP 2 -->
+  <div class="panel" id="s2">
+    <div class="panel-head">
+      <div class="ph-icon">📅</div>
+      <div class="ph-text">
+        <h3>Daily / Weekly Log Entries</h3>
+        <p>Give short bullet-point prompts — AI will write detailed 200–250 word entries for each</p>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="entry-cards" id="ec"></div>
+      <div class="row" style="margin-top:20px">
+        <button class="btn btn-outline btn-sm" onclick="addEntry()">＋ Add Entry</button>
+        <button class="btn btn-outline" onclick="gotoStep(1)">← Back</button>
+        <button class="btn btn-dark" onclick="gotoStep(3)">Next: Generate →</button>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- STEP 3 -->
+  <div class="panel" id="s3">
+    <div class="panel-head">
+      <div class="ph-icon">⚡</div>
+      <div class="ph-text">
+        <h3>Choose Document Type & Generate</h3>
+        <p>AI will write complete, professional social work documentation from your prompts</p>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="doc-types">
+        <div class="dt sel" id="dt-logbook" onclick="pickDoc('logbook')">
+          <div class="dt-check">✓</div>
+          <div class="dt-icon">📔</div>
+          <h4>Logbook Only</h4>
+          <p>Detailed daily/weekly field work log entries with activities, observations & reflections</p>
+        </div>
+        <div class="dt" id="dt-report" onclick="pickDoc('report')">
+          <div class="dt-check">✓</div>
+          <div class="dt-icon">📊</div>
+          <h4>Internship Report</h4>
+          <p>Full formal report: introduction, methodology, field observations, learnings & conclusion</p>
+        </div>
+        <div class="dt" id="dt-both" onclick="pickDoc('both')">
+          <div class="dt-check">✓</div>
+          <div class="dt-icon">📂</div>
+          <h4>Logbook + Report</h4>
+          <p>Complete combined document — logbook followed by the full internship report</p>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn btn-outline" onclick="gotoStep(2)">← Back</button>
+        <button class="btn btn-gold" onclick="generate()">✦ Generate with AI</button>
+      </div>
+    </div>
+  </div>
+ 
+  <!-- LOADING -->
+  <div class="loading" id="loading">
+    <div class="spin"></div>
+    <div class="progress-bar"><div class="progress-fill"></div></div>
+    <h3>Claude is writing your document…</h3>
+    <p>Expanding your prompts into detailed, professional social work documentation. Please wait 20–40 seconds.</p>
+  </div>
+ 
+  <!-- RESULT -->
+  <div id="result-section" style="display:none">
+    <div class="preview-bar">
+      <div>
+        <h3>✅ Document Ready to Download</h3>
+        <p>Preview your AI-generated document below, then download as PDF</p>
+      </div>
+      <div class="row" style="margin-top:0">
+        <button class="btn btn-outline btn-sm" onclick="gotoStep(3)">↺ Regenerate</button>
+        <button class="btn btn-green" onclick="downloadPDF()">⬇ Download PDF</button>
+      </div>
+    </div>
+    <div class="doc-preview" id="doc-preview"></div>
+    <div style="text-align:center;margin-top:24px">
+      <button class="btn btn-green" onclick="downloadPDF()" style="font-size:15px;padding:14px 32px">⬇ Download as PDF</button>
+    </div>
+  </div>
+ 
+</div>
+<div class="toast" id="toast"></div>
+ 
+<script>
+var docType='logbook', entryCount=0, aiText='', formData={};
+ 
+document.addEventListener('DOMContentLoaded',function(){
+  var now=new Date();
+  var fmt=function(d){return d.toISOString().split('T')[0];};
+  var first=new Date(now.getFullYear(),now.getMonth(),1);
+  document.getElementById('f-start').value=fmt(first);
+  document.getElementById('f-end').value=fmt(now);
+  addEntry(); addEntry(); addEntry();
+});
+ 
+function gotoStep(n){
+  for(var i=1;i<=3;i++){
+    document.getElementById('s'+i).classList.remove('show');
+    var sp=document.getElementById('sp'+i);
+    if(sp){sp.classList.remove('active','done'); if(i<n)sp.classList.add('done'); if(i===n)sp.classList.add('active');}
+  }
+  var sp4=document.getElementById('sp4');
+  if(sp4)sp4.classList.remove('active','done');
+  document.getElementById('loading').classList.remove('show');
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('s'+n).classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+ 
+function pickDoc(t){
+  docType=t;
+  ['logbook','report','both'].forEach(function(d){document.getElementById('dt-'+d).classList.remove('sel');});
+  document.getElementById('dt-'+t).classList.add('sel');
+}
+ 
+function addEntry(){
+  entryCount++;
+  var c=document.getElementById('ec');
+  var en=c.querySelector('.empty-note');
+  if(en)en.remove();
+  var id='e'+entryCount;
+  var today=new Date();
+  var d=new Date(today); d.setDate(today.getDate()-(entryCount-1));
+  var dv=d.toISOString().split('T')[0];
+  var el=document.createElement('div');
+  el.className='entry-card'; el.id=id;
+  el.innerHTML='<div class="entry-card-head"><span class="entry-badge">ENTRY '+entryCount+'</span><button class="rm-btn" onclick="removeEntry(\''+id+'\')">✕ Remove</button></div>'+
+    '<div class="entry-card-body">'+
+    '<div class="fg"><label>Date</label><input type="date" id="'+id+'-date" value="'+dv+'"/></div>'+
+    '<div class="fg"><label>Activity Type</label><select id="'+id+'-type"><option>Field Visit</option><option>Home Visit</option><option>Community Meeting</option><option>Awareness Camp</option><option>Survey / Data Collection</option><option>Workshop / Training</option><option>Office Work</option><option>Group Activity</option><option>Documentation</option><option>Other</option></select></div>'+
+    '<div class="fg full"><label>Short Prompt — What happened? (even 5–10 words is enough)</label><textarea id="'+id+'-prompt" rows="2" placeholder="e.g. Visited slum area with supervisor, met 12 families, discussed child nutrition, noted poor sanitation…"></textarea></div>'+
+    '<div class="fg full"><label>Key Learnings / Observations (brief notes)</label><textarea id="'+id+'-learn" rows="2" placeholder="e.g. Families unaware of govt. schemes, children dropping out of school, need follow-up visits…"></textarea></div>'+
+    '</div>';
+  c.appendChild(el);
+}
+ 
+function removeEntry(id){
+  var el=document.getElementById(id);
+  if(el)el.remove();
+  if(!document.querySelectorAll('.entry-card').length){
+    document.getElementById('ec').innerHTML='<div class="empty-note">No entries yet. Click "＋ Add Entry" to begin.</div>';
+  }
+}
+ 
+function getVal(id){var el=document.getElementById(id);return el?el.value||'':'';}
+ 
+function getData(){
+  var entries=[];
+  document.querySelectorAll('.entry-card').forEach(function(el){
+    var id=el.id;
+    var prompt=getVal(id+'-prompt').trim();
+    if(prompt)entries.push({date:getVal(id+'-date'),type:getVal(id+'-type'),prompt:prompt,learn:getVal(id+'-learn')});
+  });
+  return {
+    name:getVal('f-name')||'Student',id:getVal('f-id'),
+    college:getVal('f-college'),dept:getVal('f-dept'),
+    org:getVal('f-org')||'Organisation',addr:getVal('f-addr'),
+    start:getVal('f-start'),end:getVal('f-end'),
+    sup:getVal('f-sup'),fac:getVal('f-fac'),
+    about:getVal('f-about'),role:getVal('f-role'),entries:entries
+  };
+}
+ 
+function generate(){
+  var data=getData();
+  if(!data.entries.length){showToast('Add at least one log entry first!','error');return;}
+  if(!data.name||!data.org){showToast('Please fill Name and Organisation fields.','error');return;}
+  formData=data;
+  for(var i=1;i<=3;i++){
+    document.getElementById('s'+i).classList.remove('show');
+    var sp=document.getElementById('sp'+i);
+    if(sp){sp.classList.remove('active','done');sp.classList.add('done');}
+  }
+  var sp4=document.getElementById('sp4');
+  if(sp4){sp4.classList.remove('active','done');sp4.classList.add('active');}
+  document.getElementById('result-section').style.display='none';
+  document.getElementById('loading').classList.add('show');
+  window.scrollTo({top:0,behavior:'smooth'});
+ 
+  var entriesBlock=data.entries.map(function(e,i){
+    return '--- Entry '+(i+1)+' ---\nDate: '+e.date+'\nType: '+e.type+'\nPrompt: '+e.prompt+'\nLearnings/Observations: '+e.learn;
+  }).join('\n\n');
+ 
+  var logInstr='For EACH entry, write a detailed logbook entry of 200-250 words covering:\n- Objectives of the day\n- Activities carried out in detail\n- Beneficiaries/community members met\n- Observations and field notes\n- Difficulties or challenges faced\n- Personal reflections and learnings\nBegin each entry with: ENTRY [number] | [date] | [type]\nUse formal social work academic language.';
+ 
+  var repInstr='Write a complete formal Internship Report with these sections (150-200 words each):\n1. INTRODUCTION\n2. OBJECTIVES OF THE INTERNSHIP\n3. METHODOLOGY\n4. FIELD WORK ACTIVITIES AND OBSERVATIONS\n5. KEY LEARNINGS AND SKILL DEVELOPMENT\n6. CHALLENGES AND COPING STRATEGIES\n7. CONCLUSION AND RECOMMENDATIONS\nUse professional third-person academic tone.';
+ 
+  var instr=docType==='logbook'?logInstr:docType==='report'?repInstr:logInstr+'\n\n'+repInstr;
+ 
+  var userPrompt='Student: '+data.name+' | ID: '+(data.id||'N/A')+'\nCollege: '+data.college+' | Department: '+data.dept+'\nOrganisation: '+data.org+' | Location: '+data.addr+'\nInternship Duration: '+data.start+' to '+data.end+'\nField Supervisor: '+data.sup+' | Faculty Mentor: '+data.fac+'\nAbout Organisation: '+(data.about||'Not provided')+'\nStudent Role: '+(data.role||'General social work field internship')+'\n\nLOG ENTRY PROMPTS:\n'+entriesBlock+'\n\nINSTRUCTIONS:\n'+instr+'\n\nIMPORTANT: Output ONLY the document text. No preamble, no markdown fences. Use plain section titles in CAPITALS on their own line. Write naturally flowing paragraphs.';
+ 
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-20250514',max_tokens:4096,
+      system:'You are an experienced academic writer specializing in social work field documentation. Write clear, professional, empathetic text appropriate for a BSW/MSW internship document submitted to a university.',
+      messages:[{role:'user',content:userPrompt}]
+    })
+  }).then(function(res){return res.json();}).then(function(json){
+    if(json.error)throw new Error(json.error.message);
+    aiText=json.content&&json.content.find(function(b){return b.type==='text';});
+    aiText=aiText?aiText.text:'';
+    if(!aiText)throw new Error('Empty response');
+    renderPreview(data);
+  }).catch(function(err){
+    document.getElementById('loading').classList.remove('show');
+    document.getElementById('s3').classList.add('show');
+    for(var i=1;i<=3;i++){var sp=document.getElementById('sp'+i);if(sp){sp.classList.remove('done','active');}}
+    document.getElementById('sp3').classList.add('active');
+    var sp4=document.getElementById('sp4');if(sp4)sp4.classList.remove('active','done');
+    showToast('Generation failed: '+err.message,'error');
+  });
+}
+ 
+function fmtDate(s){
+  if(!s)return '—';
+  try{return new Date(s).toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});}catch(e){return s;}
+}
+ 
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+ 
+function renderPreview(data){
+  document.getElementById('loading').classList.remove('show');
+  var rs=document.getElementById('result-section');
+  rs.style.display='block';
+  var docLabel=docType==='logbook'?'Field Work Logbook':docType==='report'?'Internship Report':'Logbook & Internship Report';
+  var lines=aiText.split('\n');
+  var bodyHtml='';
+  var inE=false,eBuf='',eMeta={},eIdx=0;
+ 
+  function flushEntry(){
+    if(!inE)return;
+    bodyHtml+='<div class="doc-entry"><div class="doc-entry-head"><span class="entry-num">ENTRY '+(eMeta.num||eIdx)+'</span><span class="entry-date">'+fmtDate(eMeta.date)+'</span><span class="entry-type">'+(eMeta.type||'Field Work')+'</span></div>'+
+      eBuf.split('\n').filter(function(l){return l.trim();}).map(function(l){return '<p>'+esc(l.trim())+'</p>';}).join('')+'</div>';
+    eBuf='';inE=false;eMeta={};
+  }
+ 
+  lines.forEach(function(line){
+    var t=line.trim();if(!t){if(inE)eBuf+='\n';return;}
+    var em=t.match(/^ENTRY\s+(\d+)\s*[\||\-|–]\s*(\S[^|\-–]*?)[\||\-|–]\s*(.+)/i)||t.match(/^ENTRY\s+(\d+)\s*$/i);
+    if(em){flushEntry();eIdx++;inE=true;
+      eMeta={num:em[1]||eIdx,date:(em[2]||'').trim()||(data.entries[eIdx-1]?data.entries[eIdx-1].date:''),type:(em[3]||'').trim()||(data.entries[eIdx-1]?data.entries[eIdx-1].type:'Field Work')};
+      return;}
+    if(inE&&/^(Date:|Type:|Activity:)/i.test(t)){
+      var dm=t.match(/Date:\s*(.+)/i);if(dm)eMeta.date=dm[1].trim();
+      var tm=t.match(/(?:Type|Activity):\s*(.+)/i);if(tm)eMeta.type=tm[1].trim();return;}
+    var isSec=/^(INTRODUCTION|OBJECTIVES|METHODOLOGY|FIELD WORK|ACTIVITIES|KEY LEARN|CHALLENGES|CONCLUSION|RECOMMEND|SUMMARY|DAILY LOG|LOG ENTRIES)/i.test(t)&&t.length<90&&!t.includes('.');
+    if(isSec){flushEntry();bodyHtml+='<div class="doc-sec-title">'+esc(t.replace(/^\d+\.\s*/,''))+'</div>';return;}
+    if(inE)eBuf+=t+'\n';
+    else bodyHtml+='<p class="doc-para">'+esc(t)+'</p>';
+  });
+  flushEntry();
+ 
+  document.getElementById('doc-preview').innerHTML=
+    '<div class="doc-cover">'+
+    '<div class="cover-label">Social Internship — '+(data.college||'College')+'</div>'+
+    '<div class="cover-title">'+docLabel+'</div>'+
+    '<div class="cover-org">'+data.org+'</div>'+
+    '<div class="cover-meta">'+
+    '<div class="cm-item"><span class="cm-label">Name</span><span class="cm-val">'+data.name+'</span></div>'+
+    '<div class="cm-item"><span class="cm-label">ID</span><span class="cm-val">'+(data.id||'—')+'</span></div>'+
+    '<div class="cm-item"><span class="cm-label">Programme</span><span class="cm-val">'+(data.dept||'—')+'</span></div>'+
+    '<div class="cm-item"><span class="cm-label">Duration</span><span class="cm-val">'+fmtDate(data.start)+' – '+fmtDate(data.end)+'</span></div>'+
+    '<div class="cm-item"><span class="cm-label">Supervisor</span><span class="cm-val">'+(data.sup||'—')+'</span></div>'+
+    '<div class="cm-item"><span class="cm-label">Faculty</span><span class="cm-val">'+(data.fac||'—')+'</span></div>'+
+    '</div></div>'+
+    '<div class="doc-body">'+bodyHtml+
+    '<div class="signatures">'+
+    '<div class="sig-box"><p>Field Supervisor\'s Signature &amp; Stamp</p><div class="sig-line"></div><div class="sig-name">'+(data.sup||'_______________')+'</div><div class="sig-role">Field Supervisor, '+data.org+'</div></div>'+
+    '<div class="sig-box"><p>Faculty Mentor\'s Signature &amp; Stamp</p><div class="sig-line"></div><div class="sig-name">'+(data.fac||'_______________')+'</div><div class="sig-role">Faculty Mentor, '+(data.college||'College')+'</div></div>'+
+    '</div></div>';
+ 
+  rs.scrollIntoView({behavior:'smooth',block:'start'});
+  showToast('Document generated! Ready to download.','success');
+}
+ 
+function downloadPDF(){
+  var jspdf=window.jspdf;if(!jspdf){showToast('PDF library not loaded yet, please wait.','error');return;}
+  var data=formData;if(!data||!data.name){showToast('Please generate document first.','error');return;}
+  var doc=new jspdf.jsPDF({orientation:'p',unit:'mm',format:'a4'});
+  var W=210,PH=297,ML=22,MR=22,MT=20,MB=20,CW=W-ML-MR;
+  var y=MT;
+  var Cn={navy:[13,17,23],navy2:[30,39,73],gold:[181,137,42],gold2:[212,168,67],teal:[37,99,168],slate:[55,65,81],muted:[107,114,128],border:[226,232,234],surface:[248,249,252]};
+ 
+  function newPage(){
+    doc.addPage();y=MT;
+    doc.setFontSize(8);doc.setTextColor(107,114,128);
+    doc.text(data.name+' · '+data.org+' · Social Internship Document',W/2,PH-12,{align:'center'});
+    doc.setDrawColor(226,232,234);doc.setLineWidth(0.3);doc.line(ML,PH-16,W-MR,PH-16);
+  }
+  function chk(h){if(y+h>PH-MB-18)newPage();}
+  function secTitle(t){
+    chk(16);
+    doc.setFillColor(181,137,42);doc.rect(ML,y,3,10,'F');
+    doc.setFontSize(12);doc.setFont('helvetica','bold');doc.setTextColor(13,17,23);
+    doc.text(t,ML+7,y+7);y+=14;
+    doc.setDrawColor(226,232,234);doc.setLineWidth(0.3);doc.line(ML,y,W-MR,y);y+=5;
+  }
+  function para(txt,ix){
+    var x=ML+(ix||0),w=CW-(ix||0);
+    doc.setFontSize(9.5);doc.setFont('helvetica','normal');doc.setTextColor(55,65,81);
+    var ls=doc.splitTextToSize(txt,w);
+    ls.forEach(function(l){chk(6);doc.text(l,x,y);y+=5.5;});y+=1.5;
+  }
+  function entryBlock(num,date,type,content){
+    chk(28);
+    doc.setFillColor(13,17,23);doc.roundedRect(ML,y,CW,11,2,2,'F');
+    doc.setTextColor(212,168,67);doc.setFontSize(8);doc.setFont('helvetica','bold');
+    doc.text('ENTRY '+num,ML+5,y+7);
+    doc.setTextColor(255,255,255);doc.setFont('helvetica','normal');doc.setFontSize(8.5);
+    doc.text(fmtDate(date)+'   ·   '+type,ML+30,y+7);
+    y+=15;
+    var ls=doc.splitTextToSize(content.trim(),CW-8);
+    ls.forEach(function(l){chk(6);doc.text(l,ML+4,y);y+=5.5;});
+    y+=6;
+    doc.setDrawColor(226,232,234);doc.setLineWidth(0.2);doc.line(ML,y,W-MR,y);y+=5;
+  }
+ 
+  // Cover
+  doc.setFillColor(13,17,23);doc.rect(0,0,W,PH,'F');
+  doc.setFillColor(181,137,42);doc.rect(0,PH-5,W,5,'F');
+  var docLabel=docType==='logbook'?'FIELD WORK LOGBOOK':docType==='report'?'INTERNSHIP REPORT':'LOGBOOK & INTERNSHIP REPORT';
+  doc.setTextColor(107,114,128);doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('SOCIAL INTERNSHIP',W/2,58,{align:'center'});
+  doc.setTextColor(212,168,67);doc.setFontSize(9);doc.setFont('helvetica','bold');
+  doc.text((data.college||'COLLEGE').toUpperCase(),W/2,68,{align:'center'});
+  doc.setTextColor(255,255,255);doc.setFontSize(22);doc.setFont('helvetica','bold');
+  var tls=doc.splitTextToSize(docLabel,150);var ty=95;
+  tls.forEach(function(tl){doc.text(tl,W/2,ty,{align:'center'});ty+=12;});
+  doc.setTextColor(212,168,67);doc.setFontSize(13);doc.setFont('helvetica','normal');
+  doc.text(data.org,W/2,ty+4,{align:'center'});
+  var bx=ML+10,by=ty+18,bw=CW-20,bh=50;
+  doc.setFillColor(255,255,255);doc.setGState(doc.GState({opacity:0.06}));
+  doc.roundedRect(bx,by,bw,bh,3,3,'F');doc.setGState(doc.GState({opacity:1}));
+  doc.setDrawColor(255,255,255);doc.setLineWidth(0.2);doc.roundedRect(bx,by,bw,bh,3,3,'S');
+  var metas=[['Name',data.name],['Student ID',data.id||'—'],['Programme',data.dept||'—'],['Duration',fmtDate(data.start)+' – '+fmtDate(data.end)],['Supervisor',data.sup||'—'],['Faculty',data.fac||'—']];
+  metas.forEach(function(m,i){
+    var col=i%2,row=Math.floor(i/2);
+    var mx=bx+10+col*(bw/2),my=by+10+row*15;
+    doc.setFontSize(7.5);doc.setFont('helvetica','bold');doc.setTextColor(107,114,128);doc.text(m[0].toUpperCase(),mx,my);
+    doc.setFont('helvetica','normal');doc.setTextColor(255,255,255);doc.setFontSize(9);
+    doc.text(m[1]||'—',mx,my+6,{maxWidth:bw/2-14});
+  });
+ 
+  // Content pages
+  newPage();
+  var lines=aiText.split('\n');
+  var inE=false,eBuf='',eMeta={},eIdx=0;
+  function flushE(){
+    if(!inE)return;
+    entryBlock(eMeta.num||eIdx,eMeta.date||'',eMeta.type||'Field Work',eBuf);
+    eBuf='';inE=false;eMeta={};
+  }
+  lines.forEach(function(line){
+    var t=line.trim();if(!t){if(inE)eBuf+='\n';return;}
+    var em=t.match(/^ENTRY\s+(\d+)\s*[\||\-|–]\s*(\S[^|\-–]*?)[\||\-|–]\s*(.+)/i)||t.match(/^ENTRY\s+(\d+)\s*$/i);
+    if(em){flushE();eIdx++;inE=true;
+      eMeta={num:em[1]||eIdx,date:(em[2]||'').trim()||(data.entries[eIdx-1]?data.entries[eIdx-1].date:''),type:(em[3]||'').trim()||(data.entries[eIdx-1]?data.entries[eIdx-1].type:'Field Work')};return;}
+    if(inE&&/^(Date:|Type:|Activity:)/i.test(t)){
+      var dm=t.match(/Date:\s*(.+)/i);if(dm)eMeta.date=dm[1].trim();
+      var tm=t.match(/(?:Type|Activity):\s*(.+)/i);if(tm)eMeta.type=tm[1].trim();return;}
+    var isSec=/^(INTRODUCTION|OBJECTIVES|METHODOLOGY|FIELD WORK|ACTIVITIES|KEY LEARN|CHALLENGES|CONCLUSION|RECOMMEND|SUMMARY|DAILY LOG|LOG ENTRIES)/i.test(t)&&t.length<90&&!t.includes('.');
+    if(isSec){flushE();secTitle(t.replace(/^\d+\.\s*/,''));return;}
+    if(inE)eBuf+=t+' ';else para(t);
+  });
+  flushE();
+ 
+  // Signatures
+  chk(65);y+=10;
+  doc.setDrawColor(226,232,234);doc.setLineWidth(0.3);doc.line(ML,y,W-MR,y);y+=14;
+  doc.setFontSize(11);doc.setFont('helvetica','bold');doc.setTextColor(13,17,23);
+  doc.text('ATTESTATION & SIGNATURES',W/2,y,{align:'center'});y+=14;
+  var sw=(CW-14)/2;
+  [[data.sup||'_______________','Field Supervisor\n'+data.org],[data.fac||'_______________','Faculty Mentor\n'+(data.college||'College')]].forEach(function(sg,i){
+    var sx=ML+i*(sw+14),sy=y;
+    doc.setFillColor(248,249,252);doc.roundedRect(sx,sy,sw,46,3,3,'F');
+    doc.setDrawColor(226,232,234);doc.setLineWidth(0.3);doc.roundedRect(sx,sy,sw,46,3,3,'S');
+    doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(107,114,128);doc.text('Signature:',sx+6,sy+8);
+    doc.setDrawColor(13,17,23);doc.setLineWidth(0.5);doc.line(sx+6,sy+24,sx+sw-6,sy+24);
+    doc.setFontSize(9);doc.setFont('helvetica','bold');doc.setTextColor(13,17,23);doc.text(sg[0],sx+6,sy+31,{maxWidth:sw-12});
+    doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(107,114,128);
+    sg[1].split('\n').forEach(function(rl,ri){doc.text(rl,sx+6,sy+38+ri*4.5,{maxWidth:sw-12});});
+  });
+ 
+  doc.setPage(1);
+  doc.setFontSize(8);doc.setFont('helvetica','normal');doc.setTextColor(107,114,128);
+  doc.text('Generated '+new Date().toLocaleDateString('en-IN')+' · InternLog AI',W/2,PH-12,{align:'center'});
+ 
+  var fname=(data.name.replace(/\s+/g,'_'))+'_'+(docType==='logbook'?'Logbook':docType==='report'?'Report':'Logbook_Report')+'_'+(data.org.replace(/\s+/g,'_'))+'.pdf';
+  doc.save(fname);
+  showToast('PDF downloaded successfully!','success');
+}
+ 
+function showToast(msg,type){
+  var t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast'+(type?' '+type:'');
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3800);
+}
+</script>
+</body>
+</html>
+ 
